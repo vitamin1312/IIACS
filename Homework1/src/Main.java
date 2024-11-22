@@ -1,14 +1,12 @@
+import utils.Values;
+
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import org.jfree.Chart.ChartFactory;
-import org.jfree.Chart.ChartPanel;
-import org.jfree.Chart.
-
 
 public class Main {
 
-    public static double CountWACC(
+    public static Values CountWACC(
             double div,
             double priceEquity,
             double growth,
@@ -25,14 +23,12 @@ public class Main {
 
         double WACC = (costBC * capitalPercentBC + priceSC * capitalPercentSC) * 100;
 
-        // Лучше бы я не исполльзовал принты...
-        System.out.println("costBC: " + costBC * 100);
-        System.out.println("priceBC: " + priceBC * 100);
-        System.out.println(WACC);
-        System.out.println("priceSC: " + priceSC * 100);
-
-        return WACC;
+        return new Values(costBC * 100, priceBC * 100, WACC, priceSC * 100);
     };
+
+    static double round(double number) {
+        return (double)Math.round(number * 100) / 100;
+    }
 
     public static void main(String[] args) {
         double div = 0.25;
@@ -43,7 +39,7 @@ public class Main {
         double priceBC = 0.08;
         double tax = 0.25;
 
-        double WACC = CountWACC(div,
+        Values values = CountWACC(div,
                 priceEquity,
                 growth,
                 capitalSC,
@@ -51,14 +47,31 @@ public class Main {
                 priceBC,
                 tax);
 
+        double costBC = values.costBC;
+        double WACC = values.WACC;
+        double priceSC = values.priceSC;;
+
+
         JFrame window = new JFrame("Оценка рентабельности производства");
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        window.setBounds(50, 50, 325, 250);
+        window.setBounds(50, 50, 325, 300);
         window.setLayout(null);
 
-        JLabel lWACCValue = new JLabel("WACC: " + WACC);
-        lWACCValue.setBounds(205, 5, 100, 20);
+        JLabel lCostBC = new JLabel("Cost BC: " + round(costBC));
+        lCostBC.setBounds(205, 5, 100, 20);
+        window.add(lCostBC);
+
+        JLabel lPriceBC = new JLabel("Price BC: " + round(priceBC));
+        lPriceBC.setBounds(205, 25, 100, 20);
+        window.add(lPriceBC);
+
+        JLabel lWACCValue = new JLabel("WACC: " + round(WACC));
+        lWACCValue.setBounds(205, 45, 100, 20);
         window.add(lWACCValue);
+
+        JLabel lPriceSc = new JLabel("Price SC: " + round(priceSC));
+        lPriceSc.setBounds(205, 65, 100, 20);
+        window.add(lPriceSc);
 
         JLabel lVATValue = new JLabel("VAT value");
         lVATValue.setBounds(5, 5, 100, 20);
@@ -85,6 +98,14 @@ public class Main {
         lPriceValue.setBounds(5, 155, 300, 20);
         window.add(lPriceValue);
 
+        JButton plotResTax = new JButton("Зависимость WACC от налога на прибыль");
+        plotResTax.setBounds(5, 185, 300, 20);
+        window.add(plotResTax);
+
+        JButton getBarCode = new JButton("Генерация штрих-кода");
+        getBarCode.setBounds(5, 215, 300, 20);
+        window.add(getBarCode);
+
         ActionListener actionListener = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -92,11 +113,37 @@ public class Main {
                 StockPriceValue = Double.parseDouble(StockPrice.getText());
                 VATValue = Double.parseDouble(VAT.getText());
                 MarketPrice = (Benefit * (1 - VATValue) / StockPriceValue) + VATValue + LoanCapitalPrice;
-                lPriceValue.setText(MarketPrice + "");
+                lPriceValue.setText(round(MarketPrice) + "");
+            }
+        };
+
+        ActionListener actionListener1 = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Runtime.getRuntime().exec("python tax_wacc.py");
+                }
+                catch (Exception ex) {
+                    System.out.println(ex.toString());
+                }
+            }
+        };
+
+        ActionListener actionListener2 = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Runtime.getRuntime().exec("python my_barcode.py");
+                }
+                catch (Exception ex) {
+                    System.out.println(ex.toString());
+                }
             }
         };
 
         countPrice.addActionListener(actionListener);
+        plotResTax.addActionListener(actionListener1);
+        getBarCode.addActionListener(actionListener2);
         window.setVisible(true);
     }
 }
